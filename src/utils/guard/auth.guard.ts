@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import * as jwt from 'jsonwebtoken';
+import { User } from 'src/db/entities/user.entity';
 //   import { User } from 'src/db/entities/user.entity';
 
 @Injectable()
@@ -26,9 +27,9 @@ export class AuthGuard implements CanActivate {
       }
       const userId: string = decoded.username;
 
-      // const user = await User.findOneBy({ userId: userId });
+      const user = await User.findOneBy({ userId: userId });
 
-      // request.authUser = user;
+      request.authUser = user;
 
       return true;
     } catch (e) {

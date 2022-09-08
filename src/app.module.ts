@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UserController } from './Module/userModule/userModule.controller';
+import { UserService } from './Module/userModule/userModule.service';
 import { UserSignController } from './Module/userSignModule/userSign.controller';
 import { UserSignService } from './Module/userSignModule/userSign.service';
 
@@ -24,7 +26,7 @@ export const sqliteDataSource = new DataSource({
       synchronize: true,
     }),
   ],
-  controllers: [AppController, UserSignController],
-  providers: [AppService, UserSignService],
+  controllers: [AppController, UserSignController, UserController],
+  providers: [AppService, UserSignService, UserService],
 })
 export class AppModule {}
