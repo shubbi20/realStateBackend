@@ -6,6 +6,7 @@ import {
   BaseEntity,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Apartment } from './apartment.entity';
 //   import { RegisteredBike } from './registeredBike.entity';
@@ -26,11 +27,10 @@ export class User extends BaseEntity {
   })
   role: string; //two types 1>regular 2>manager 3>admin
 
-  @OneToOne(() => Apartment, (apartment) => apartment.createdBy, {
+  @OneToMany(() => Apartment, (apartment) => apartment.createdBy, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn()
-  apartment: Apartment;
+  apartment: Apartment[];
   // @OneToMany(() => RegisteredBike, (registeredBike) => registeredBike.userId)
   // regBike: RegisteredBike[];
 }

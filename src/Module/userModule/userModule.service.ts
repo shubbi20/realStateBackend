@@ -96,8 +96,7 @@ export class UserService {
 
       if (userId) {
         const user1 = await User.findOneBy({ userId: userId });
-        console.log('ritu give me bj', user1);
-        if (user1) {
+        if (user1 && user1.id !== id) {
           return new HttpException(
             `User with this userId:${userId} already exist`,
             400,

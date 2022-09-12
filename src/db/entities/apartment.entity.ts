@@ -4,6 +4,8 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -36,6 +38,7 @@ export class Apartment extends BaseEntity {
   @Column()
   roomLongitude: number;
 
-  @OneToOne(() => User, (user) => user.apartment)
+  @ManyToOne(() => User, (user) => user.apartment, { onDelete: 'CASCADE' })
+  @JoinColumn()
   createdBy: User;
 }
