@@ -35,8 +35,8 @@ export class ApartmentService {
 
       if (!user) {
         return new HttpException(
-          `User with this id:${userId} is not exist`,
-          400,
+          `User with this id:${userId} is not found`,
+          404,
         );
       }
 
@@ -58,7 +58,7 @@ export class ApartmentService {
         apartment: apartmentSave.id,
       };
     } catch (e) {
-      return new HttpException(e.message, 400);
+      return new HttpException(e.message, 500);
     }
   }
 
@@ -78,8 +78,8 @@ export class ApartmentService {
     return {
       msg: 'successfull',
       Data: d,
-      totalCount: totalCount,
-      dataPerPage: limit,
+      //totalCount: totalCount,
+      //dataPerPage: limit,
       currentPage: page,
       totalPage: Math.ceil(totalCount / limit),
     };
@@ -119,9 +119,6 @@ export class ApartmentService {
             );
           }),
         );
-        // apartmentData = await apartmentData
-        //   .where('apartment.isAvailable=:value', { value: true })
-        //   .orWhere('apartment.createdBy.id=:id', { id: userid });
       }
 
       if (role === 'regular') {
@@ -177,8 +174,8 @@ export class ApartmentService {
       return {
         msg: 'successful',
         Data: Data,
-        DataCount: DataCount,
-        dataPerPage: limit,
+        // DataCount: DataCount,
+        //dataPerPage: limit,
         currentPage: page,
         totalPage: Math.ceil(DataCount / limit),
       };
@@ -197,15 +194,15 @@ export class ApartmentService {
 
       if (!apart) {
         return new HttpException(
-          `apartment with this id:${id} is not exist`,
-          400,
+          `apartment with this id:${id} is not found`,
+          404,
         );
       }
 
       if (role === 'manager' && apart.createdBy.id !== userId) {
         return new HttpException(
           'manager can only delete his own apartments',
-          400,
+          403,
         );
       }
 
@@ -216,7 +213,7 @@ export class ApartmentService {
         Data: apartment,
       };
     } catch (e) {
-      return new HttpException(e.message, 400);
+      return new HttpException(e.message, 500);
     }
   }
 
@@ -228,6 +225,7 @@ export class ApartmentService {
     floors,
     isAvailable,
     role,
+    userId,
   }: {
     id: number;
     monthlyRental: number;
@@ -236,6 +234,7 @@ export class ApartmentService {
     floors: number;
     isAvailable: boolean;
     role: string;
+    userId: number;
   }) {
     try {
       const apart = await Apartment.createQueryBuilder('apart')
@@ -247,15 +246,15 @@ export class ApartmentService {
 
       if (!apart) {
         return new HttpException(
-          `apartment with this id:${id} is not exist`,
-          400,
+          `apartment with this id:${id} is not found`,
+          404,
         );
       }
 
-      if (role === 'manager' && apart.createdBy.id !== apart.createdBy.id) {
+      if (role === 'manager' && apart.createdBy.id !== userId) {
         return new HttpException(
-          'manager can only delete his own apartments',
-          400,
+          'manager can only update his own apartments',
+          403,
         );
       }
 
@@ -272,7 +271,7 @@ export class ApartmentService {
         Data: apartment,
       };
     } catch (e) {
-      return new HttpException(e.message, 400);
+      return new HttpException(e.message, 500);
     }
   }
 
@@ -300,8 +299,8 @@ export class ApartmentService {
       return {
         msg: 'successful',
         Data: Data,
-        DataCount: DataCount,
-        dataPerPage: limit,
+        //DataCount: DataCount,
+        // dataPerPage: limit,
         currentPage: page,
         totalPage: Math.ceil(DataCount / limit),
       };

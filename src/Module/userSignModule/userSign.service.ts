@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { ConflictException, HttpException, Injectable } from '@nestjs/common';
 import * as Bcrypt from 'bcryptjs';
 import { isNull } from 'lodash';
 import * as jwt from 'jsonwebtoken';
@@ -10,9 +10,9 @@ export class UserSignService {
     try {
       const user1 = await User.findOneBy({ userId: userId });
       if (!isNull(user1)) {
-        throw new HttpException(
+        return new HttpException(
           `User with this userId: ${userId} is already registered`,
-          400,
+          409,
         );
       }
 
@@ -35,7 +35,7 @@ export class UserSignService {
         token: token,
       };
     } catch (e) {
-      return new HttpException(e.message, 400);
+      return new HttpException(e.message, 500);
     }
   }
 
@@ -45,9 +45,9 @@ export class UserSignService {
         userId: userId,
       });
       if (isNull(user)) {
-        throw new HttpException(
-          `User with this id:${userId} is not exist`,
-          400,
+        return new HttpException(
+          `User with this id:${userId} is not found`,
+          404,
         );
       }
 
@@ -57,7 +57,7 @@ export class UserSignService {
       );
 
       if (!isValidPassword) {
-        throw new HttpException('invalid credential', 400);
+        return new HttpException('invalid credential', 401);
       }
 
       const token = jwt.sign(

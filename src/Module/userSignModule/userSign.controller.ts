@@ -37,7 +37,9 @@ export class UserSignController {
       });
 
       if (error) {
-        throw new BadRequestException(error.message);
+        return res
+          .status(HttpStatus.UNAUTHORIZED)
+          .send({ error: error.message });
       }
 
       console.log(value.password);
@@ -50,9 +52,9 @@ export class UserSignController {
         return saved;
       }
 
-      return res.status(HttpStatus.BAD_REQUEST).send(saved);
+      return res.status(saved.getStatus()).send({ error: saved.message });
     } catch (e) {
-      return new HttpException(e.message, 400);
+      return new HttpException(e.message, 500);
     }
   }
 
@@ -78,7 +80,7 @@ export class UserSignController {
 
       if (error) {
         return res
-          .status(HttpStatus.BAD_REQUEST)
+          .status(HttpStatus.UNAUTHORIZED)
           .send({ error: error.message });
       }
 
@@ -90,9 +92,9 @@ export class UserSignController {
       if ('msg' in saved) {
         return saved;
       }
-      return res.status(HttpStatus.BAD_REQUEST).send(saved);
+      return res.status(saved.getStatus()).send({ error: saved.message });
     } catch (e) {
-      return new HttpException(e.message, 400);
+      return new HttpException(e.message, 500);
     }
   }
 }

@@ -5,7 +5,6 @@ import {
   Res,
   HttpStatus,
   ParseIntPipe,
-  UsePipes,
   Get,
   Delete,
   Param,
@@ -14,23 +13,35 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/utils/guard/auth.guard';
-
 import { Auth, IAuth } from 'src/utils/auth.decorator';
 import { Response } from 'express';
 import * as Joi from 'joi';
 import { ApartmentService } from './apartmentModule.service';
-import { isAbsolute } from 'path';
-import { Apartment } from 'src/db/entities/apartment.entity';
+import { RoleGuard } from 'src/utils/guard/role.guard';
+import { ERole } from '../userModule/user.service';
+
+/**
+ * Validation
+ * 1> take care of Erole
+ * 2> remove the dead code
+ * 3> remove res
+ * 4> make separate file for schema
+ * 4> follow dry concept everyWhere
+ * 5>
+ */
 
 @UseGuards(AuthGuard)
-@Controller()
+@Controller('apartment')
 export class ApartmentController {
   constructor(private readonly apartmentService: ApartmentService) {}
 
-  @Post('createApartment')
+  @Post()
+  @RoleGuard(ERole.y || ERole.z) // include those who have the access
   async createApartment(
     @Res({ passthrough: true }) res: Response,
     @Auth() authUser: IAuth,
+    @Body()
+    { email, password }: { email: string; password: string },
     @Body('address') address: string,
     @Body('monthlyRental') monthlyRental: number,
     @Body('area') area: number,
@@ -39,23 +50,23 @@ export class ApartmentController {
     @Body('isAvailable') isAvailable: boolean,
     @Body('roomLatitude') roomLatitude: number,
     @Body('roomLongitude') roomLongitude: number,
-    @Body('userId') userId: number,
+    // @Body('userId') userId: number,
   ) {
     try {
-      if (authUser.role === 'regular') {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .send({ msg: 'Regular user cannot add Apartment' });
-      }
+      // if (authUser.role === 'regular') {
+      //   return res.status(HttpStatus.FORBIDDEN).send({
+      //     error: 'Regular user dont have permission to add Apartment',
+      //   });
+      // }
 
       const schema = Joi.object()
         .options({ abortEarly: false })
         .keys({
           address: Joi.string().trim().min(3).max(45).required(),
-          monthlyRental: Joi.number().min(0).required(),
-          area: Joi.number().min(0).required(),
-          rooms: Joi.number().min(0).required(),
-          floors: Joi.number().min(0).required(),
+          monthlyRental: Joi.number().integer().min(0).required(),
+          area: Joi.number().min(0).integer().required(),
+          rooms: Joi.number().min(0).integer().required(),
+          floors: Joi.number().min(0).integer().required(),
           isAvailable: Joi.boolean().optional(),
           roomLatitude: Joi.number().required(),
           roomLongitude: Joi.number().required(),
@@ -76,8 +87,8 @@ export class ApartmentController {
 
       if (valid.error) {
         return res
-          .status(HttpStatus.BAD_REQUEST)
-          .send({ msg: 'Body fields not valid', error: valid.error.message });
+          .status(HttpStatus.UNAUTHORIZED)
+          .send({ error: valid.error.message });
       }
 
       const apartment = await this.apartmentService.createApartment({
@@ -89,54 +100,56 @@ export class ApartmentController {
         isAvailable,
         roomLatitude,
         roomLongitude,
-        userId,
+        userId: authUser.id,
       });
 
       if ('msg' in apartment) {
         return apartment;
       }
 
-      return res.status(HttpStatus.BAD_REQUEST).send(apartment);
+      return res
+        .status(apartment.getStatus())
+        .send({ error: apartment.message });
     } catch (e) {
-      return res.status(HttpStatus.BAD_REQUEST).send(e.message);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(e.message);
     }
   }
 
-  @Get('getApartments')
-  async getApartment(
-    @Res({ passthrough: true }) res: Response,
-    @Query('page') page: number = 1,
-    @Auth() authUser: IAuth,
-  ) {
-    try {
-      const schema = Joi.object()
-        .options({ abortEarly: false })
-        .keys({
-          page: Joi.number().min(1).required(),
-        })
-        .unknown();
+  // @Get('apartments')
+  // async getApartment(
+  //   @Res({ passthrough: true }) res: Response,
+  //   @Query('page') page: number = 1,
+  //   @Auth() authUser: IAuth,
+  // ) {
+  //   try {
+  //     const schema = Joi.object()
+  //       .options({ abortEarly: false })
+  //       .keys({
+  //         page: Joi.number().min(1).required(),
+  //       })
+  //       .unknown();
 
-      const valid = schema.validate({
-        page,
-      });
+  //     const valid = schema.validate({
+  //       page,
+  //     });
 
-      if (valid.error) {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .send({ error: valid.error.message });
-      }
-      const apartments = await this.apartmentService.getApartments(page);
-      if ('msg' in apartments) {
-        return apartments;
-      }
+  //     if (valid.error) {
+  //       return res
+  //         .status(HttpStatus.UNAUTHORIZED)
+  //         .send({ error: valid.error.message });
+  //     }
+  //     const apartments = await this.apartmentService.getApartments(page);
+  //     if ('msg' in apartments) {
+  //       return apartments;
+  //     }
 
-      return res.status(HttpStatus.BAD_REQUEST).send(apartments);
-    } catch (e) {
-      return res.status(HttpStatus.BAD_REQUEST).send(e.message);
-    }
-  }
+  //     return res.status(HttpStatus.BAD_REQUEST).send(apartments);
+  //   } catch (e) {
+  //     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(e.message);
+  //   }
+  // }
 
-  @Get('getapartment')
+  @Get()
   async getapartment(
     @Res({ passthrough: true }) res: Response,
     @Query('page') page: number = 1,
@@ -150,10 +163,10 @@ export class ApartmentController {
       const schema = Joi.object()
         .options({ abortEarly: false })
         .keys({
-          monthlyRental: Joi.number().min(0),
-          area: Joi.number().min(0),
-          rooms: Joi.number().min(0),
-          floors: Joi.number().min(0),
+          monthlyRental: Joi.number().integer().min(0),
+          area: Joi.number().integer().min(0),
+          rooms: Joi.number().integer().min(0),
+          floors: Joi.number().integer().min(0),
         })
         .unknown();
       //Longitude and latitude can be negative so handle accordingly
@@ -167,8 +180,8 @@ export class ApartmentController {
 
       if (valid.error) {
         return res
-          .status(HttpStatus.BAD_REQUEST)
-          .send({ msg: 'Body fields not valid', error: valid.error.message });
+          .status(HttpStatus.UNAUTHORIZED)
+          .send({ error: valid.error.message });
       }
 
       const apartments = await this.apartmentService.filterApartment({
@@ -185,40 +198,49 @@ export class ApartmentController {
         return apartments;
       }
 
-      return res.status(HttpStatus.BAD_REQUEST).send(apartments);
+      return res
+        .status(apartments.getStatus())
+        .send({ error: apartments.message });
     } catch (e) {
-      return res.status(HttpStatus.BAD_REQUEST).send(e.message);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(e.message);
     }
   }
 
-  @Delete('apartment/:id')
+  @Delete('/:id')
+  @RoleGuard(ERole.y || ERole.z)
   async deleteApartment(
     @Res({ passthrough: true }) res: Response,
     @Auth() authUser: IAuth,
     @Param('id', new ParseIntPipe()) id,
   ) {
-    try {
-      if (authUser.role === 'regular') {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .send({ msg: 'Regular user cannot delete bike' });
-      }
+    // if (authUser.role === 'regular') {
+    //   return res
+    //     .status(HttpStatus.FORBIDDEN)
+    //     .send({ error: 'Regular user dont have permission to delete' });
+    // }
 
-      const apartment = await this.apartmentService.deleteApartment(
-        id,
-        authUser.id,
-        authUser.role,
-      );
-      if ('msg' in apartment) {
-        return apartment;
-      }
-      return res.status(HttpStatus.BAD_REQUEST).send(apartment);
-    } catch (e) {
-      return res.status(HttpStatus.BAD_REQUEST).send(e.message);
-    }
+    // const apartment = await this.apartmentService.deleteApartment(
+    //   id,
+    //   authUser.id,
+    //   authUser.role,
+    // );
+
+    return this.apartmentService.deleteApartment(
+      id,
+      authUser.id,
+      authUser.role,
+    );
+
+    // if ('msg' in apartment) {
+    //   return apartment;
+    // }
+    // return res
+    //   .status(apartment.getStatus())
+    //   .send({ error: apartment.message });
   }
 
-  @Patch('updateApartment/:id')
+  @Patch('/:id')
+  @RoleGuard(ERole.y || ERole.z)
   async updateApartment(
     @Auth() authUser: IAuth,
     @Res({ passthrough: true }) res: Response,
@@ -230,13 +252,19 @@ export class ApartmentController {
     @Body('isAvailable') isAvailable: boolean,
   ) {
     try {
+      // if (authUser.role === 'regular') {
+      //   return res
+      //     .status(HttpStatus.FORBIDDEN)
+      //     .send({ error: 'Regular user dont have permission to update' });
+      // }
+
       const schema = Joi.object()
         .options({ abortEarly: false })
         .keys({
-          monthlyRental: Joi.number().min(0).required(),
-          area: Joi.number().min(0).required(),
-          rooms: Joi.number().min(0).required(),
-          floors: Joi.number().min(0).required(),
+          monthlyRental: Joi.number().integer().min(0).required(),
+          area: Joi.number().integer().min(0).required(),
+          rooms: Joi.number().integer().min(0).required(),
+          floors: Joi.number().integer().min(0).required(),
           isAvailable: Joi.boolean().optional(),
         })
         .unknown();
@@ -252,8 +280,8 @@ export class ApartmentController {
 
       if (valid.error) {
         return res
-          .status(HttpStatus.BAD_REQUEST)
-          .send({ msg: 'Body fields not valid', error: valid.error.message });
+          .status(HttpStatus.UNAUTHORIZED)
+          .send({ error: valid.error.message });
       }
 
       const apartment = await this.apartmentService.updateApartment({
@@ -264,30 +292,29 @@ export class ApartmentController {
         floors,
         isAvailable,
         role: authUser.role,
+        userId: authUser.id,
       });
 
       if ('msg' in apartment) {
         return apartment;
       }
-      return res.status(HttpStatus.BAD_REQUEST).send(apartment);
+
+      return res
+        .status(apartment.getStatus())
+        .send({ error: apartment.message });
     } catch (e) {
-      return res.status(HttpStatus.BAD_REQUEST).send(e.message);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(e.message);
     }
   }
 
-  @Get('onlyApartment')
+  @Get('/userApartment')
+  @RoleGuard(ERole.y)
   async onlyApartment(
     @Res({ passthrough: true }) res: Response,
     @Query('page') page: number = 1,
     @Auth() authUser: IAuth,
   ) {
     try {
-      if (authUser.role !== 'manager') {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .send({ msg: 'only manager is authorized' });
-      }
-
       const apartment = await this.apartmentService.onlyApartment({
         page,
         userId: authUser.id,
@@ -296,9 +323,12 @@ export class ApartmentController {
       if ('msg' in apartment) {
         return apartment;
       }
-      return res.status(HttpStatus.BAD_REQUEST).send(apartment);
+
+      return res
+        .status(apartment.getStatus())
+        .send({ error: apartment.message });
     } catch (e) {
-      return res.status(HttpStatus.BAD_REQUEST).send(e.message);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(e.message);
     }
   }
 }

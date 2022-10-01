@@ -5,8 +5,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApartmentController } from './Module/apartmentModule/apartmentModule.controller';
 import { ApartmentService } from './Module/apartmentModule/apartmentModule.service';
-import { UserController } from './Module/userModule/userModule.controller';
-import { UserService } from './Module/userModule/userModule.service';
+import { UserController } from './Module/userModule/user.controller';
+import { UserService } from './Module/userModule/user.service';
 import { UserSignController } from './Module/userSignModule/userSign.controller';
 import { UserSignService } from './Module/userSignModule/userSign.service';
 
